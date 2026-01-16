@@ -655,29 +655,37 @@ const words = [
     speak(spokenSentence);
   }
 
-  function checkSpelling() {
-    const userAnswer = document
-      .getElementById("answer")
-      .value.trim()
-      .toLowerCase();
+function checkSpelling() {
+  const userAnswer = document
+    .getElementById("answer")
+    .value.trim()
+    .toLowerCase();
 
-    const result = document.getElementById("result");
-    if (!userAnswer) return;
+  const result = document.getElementById("result");
+  if (!userAnswer) return;
 
-    const goldAnswer=currentItem.word.toLowerCase();
+  const goldAnswer = currentItem.word.trim().toLowerCase();
 
+  // Prepare sounds
+  const correctSound = new Audio("sounds/correct.mp3");
+  const wrongSound = new Audio("sounds/wrong.mp3");
 
-    if (userAnswer === goldAnswer) {
-      result.textContent = "✅ Correct!";
-      result.style.color = "green";
-      document.getElementById("redoBtn").disabled = true;
-    } else {
-      result.innerHTML =
-        `❌ Incorrect.<br>Correct spelling: <strong>${currentItem.word}</strong>`;
-      result.style.color = "red";
-      document.getElementById("redoBtn").disabled = false;
-    }
+  if (userAnswer === goldAnswer) {
+    result.textContent = "✅ Correct!";
+    result.style.color = "green";
+    document.getElementById("redoBtn").disabled = true;
+
+    correctSound.play(); // play cheering sound
+  } else {
+    result.innerHTML =
+      `❌ Incorrect.<br>Correct spelling: <strong>${currentItem.word}</strong>`;
+    result.style.color = "red";
+    document.getElementById("redoBtn").disabled = false;
+
+    wrongSound.play(); // play funny buzzer sound
   }
+}
+
 
   function redoWord() {
     document.getElementById("answer").value = "";
