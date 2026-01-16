@@ -23,6 +23,7 @@
       text-align: center;
     }
 
+
     input[type="text"], input[type="number"] {
       width: 90%;
       padding: 10px;
@@ -53,6 +54,14 @@
       margin-top: 15px;
       font-weight: bold;
     }
+
+#animationContainer img {
+  position: absolute;
+  width: 600px;   /* bigger */
+  height: auto;
+  pointer-events: none; /* allow clicks through */
+  transition: transform 0.05s linear;
+}
   </style>
 </head>
 <body onclick="speechSynthesis.resume()">
@@ -91,6 +100,8 @@
 
   <br />
   <button onclick="nextWord()">Next Word</button>
+      <!-- animation container --> 
+    <div id="animationContainer"></div>
 </div>
 
 <script>
@@ -676,6 +687,7 @@ function checkSpelling() {
     document.getElementById("redoBtn").disabled = true;
 
     correctSound.play(); // play cheering sound
+    runCharacter("https://media1.tenor.com/m/MRGuPLxq2QUAAAAd/horses-running.gif"); // horse animation
   } else {
     result.innerHTML =
       `❌ Incorrect.<br>Correct spelling: <strong>${currentItem.word}</strong>`;
@@ -683,6 +695,7 @@ function checkSpelling() {
     document.getElementById("redoBtn").disabled = false;
 
     wrongSound.play(); // play funny buzzer sound
+    runCharacter("https://media1.tenor.com/m/d6XR75p0xsEAAAAd/a-funny-chicken-thing.gif");
   }
 }
 
@@ -716,6 +729,46 @@ function checkSpelling() {
   }
 
   pickWord();
+
+
+function runCharacter(imgSrc) {
+  const container = document.getElementById("animationContainer");
+  const char = document.createElement("img");
+  char.src = imgSrc;
+  container.appendChild(char);
+
+  // start roughly in the center of the viewport
+  let x = window.innerWidth / 2 - 75 + Math.random() * 100 - 50; // center ±50px
+  let y = window.innerHeight / 2 - 75 + Math.random() * 100 - 50;
+
+  // small random movements
+  let dx = Math.random() > 0.5 ? 3 : -3;
+  let dy = Math.random() > 0.5 ? 2 : -2;
+
+  const move = setInterval(() => {
+    x += dx;
+    y += dy;
+
+    // keep within a central area (±200px from center)
+    const minX = window.innerWidth / 2 - 200;
+    const maxX = window.innerWidth / 2 + 200;
+    const minY = window.innerHeight / 2 - 200;
+    const maxY = window.innerHeight / 2 + 200;
+
+    if (x < minX || x > maxX) dx = -dx;
+    if (y < minY || y > maxY) dy = -dy;
+
+    char.style.left = x + "px";
+    char.style.top = y + "px";
+  }, 50);
+
+  setTimeout(() => {
+    clearInterval(move);
+    container.removeChild(char);
+  }, 5000);
+}
+
+
 </script>
 
 </body>
