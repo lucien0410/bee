@@ -62,9 +62,29 @@
   pointer-events: none; /* allow clicks through */
   transition: transform 0.05s linear;
 }
+
+
+#jumpBox {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  background: white;
+  padding: 10px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-size: 14px;
+  z-index: 1000;
+}
   </style>
 </head>
 <body onclick="speechSynthesis.resume()">
+
+<div id="jumpBox">
+  Jump to word:
+  <input type="number" id="jumpIndex" min="1" style="width:50px;">
+  <button onclick="jumpToIndex()">Go</button>
+</div>
+
 
 <div class="card">
   <h2>Spelling Bee Practice 🐝</h2>
@@ -87,14 +107,10 @@
   />
 
   <br />
-  <button onclick="checkSpelling()">Check</button>
-  <button id="redoBtn" onclick="redoWord()" disabled>🔁 Redo</button>
+<button onclick="checkSpelling()">Check</button>
+<br />
+<button id="redoBtn" onclick="redoWord()" disabled>🔁 Redo</button>
 
-  <div style="margin-top:10px;">
-    Jump to word index:
-    <input type="number" id="jumpIndex" min="1" style="width:50px;">
-    <button onclick="jumpToIndex()">Go</button>
-  </div>
 
   <div class="result" id="result"></div>
 
@@ -768,6 +784,12 @@ function runCharacter(imgSrc) {
   }, 5000);
 }
 
+
+document.getElementById("answer").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    checkSpelling();
+  }
+});
 
 </script>
 
