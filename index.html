@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Spelling Bee Practice</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      width: 450px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      text-align: center;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 90%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      margin: 6px;
+      padding: 10px 15px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .sentence {
+      margin-top: 15px;
+      font-style: italic;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .result {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body onclick="speechSynthesis.resume()">
+
+<div class="card">
+  <h2>Spelling Bee Practice 🐝</h2>
+
+  <button onclick="speakWord()">🔊 Hear Word</button>
+  <button onclick="speakSentence()">📘 Hear Sentence</button>
+
+  <div style="margin-top:10px;">
+    Word <span id="wordIndex">1</span> of <span id="totalWords">0</span>
+  </div>
+
+  <!-- Display masked sentence -->
+  <div class="sentence" id="sentence"></div>
+
+  <input
+    type="text"
+    id="answer"
+    placeholder="Type the spelling"
+    autocomplete="off"
+  />
+
+  <br />
+  <button onclick="checkSpelling()">Check</button>
+  <button id="redoBtn" onclick="redoWord()" disabled>🔁 Redo</button>
+
+  <div style="margin-top:10px;">
+    Jump to word index:
+    <input type="number" id="jumpIndex" min="1" style="width:50px;">
+    <button onclick="jumpToIndex()">Go</button>
+  </div>
+
+  <div class="result" id="result"></div>
+
+  <br />
+  <button onclick="nextWord()">Next Word</button>
+</div>
+
+<script>
+const words = [
+  { word: "zombielike", sentence: "The actor wore a _____ makeup for the horror play." },
+  { word: "warlock", sentence: "The story featured a powerful _____ casting spells." },
+  { word: "colossus", sentence: "The statue was a towering _____ in the city square." },
+  { word: "convulsively", sentence: "He laughed so hard that he shook _____." },
+  { word: "dimensional", sentence: "The movie used stunning _____ effects to amaze the audience." },
+  { word: "garishly", sentence: "The room was painted _____ with bright neon colors." },
+  { word: "graffitist", sentence: "A talented _____ transformed the alley wall into art." },
+  { word: "Everest", sentence: "Climbers dream of reaching the peak of _____." },
+  { word: "dexterity", sentence: "The magician showed amazing _____ with his hands." },
+  { word: "cavorting", sentence: "The puppies were _____ in the garden happily." },
+  { word: "marauder", sentence: "A sneaky _____ raided the village at night." },
+  { word: "conscience", sentence: "Her _____ told her to tell the truth." },
+  { word: "battlements", sentence: "The castle’s _____ were used to defend against enemies." },
+  { word: "deferential", sentence: "He was always _____ toward his elders." },
+  { word: "albatross", sentence: "A giant _____ soared above the ocean waves." },
+  { word: "khaki", sentence: "He wore a pair of _____ pants on the safari." },
+  { word: "opalescent", sentence: "The soap bubble glimmered with an _____ sheen." },
+  { word: "asphalt", sentence: "The freshly paved road was smooth and dark with _____." },
+  { word: "Yiddish", sentence: "She learned a few words in _____ from her grandparents." },
+  { word: "talcum", sentence: "The baby’s skin was soft after applying _____ powder." },
+  { word: "tranquilizer", sentence: "The vet gave the lion a mild _____ to calm it down." },
+  { word: "equestrian", sentence: "She excelled in _____ competitions at the riding academy." },
+  { word: "plaited", sentence: "Her hair was neatly _____ into two braids." },
+  { word: "monsieur", sentence: "The waiter greeted us with a polite '_____.' " },
+  { word: "manticores", sentence: "The fantasy novel described terrifying _____ with lion heads and scorpion tails." },
+  { word: "prestigious", sentence: "She received an award from a _____ university." },
+  { word: "fraidycat", sentence: "He was such a _____ that he jumped at every noise." },
+  { word: "guttural", sentence: "The actor made a deep _____ sound for the role." },
+  { word: "lo mein", sentence: "We ordered a plate of chicken _____ at the restaurant." },
+  { word: "courier", sentence: "The _____ delivered the package on time." },
+  { word: "sans serif", sentence: "The presentation used a clean _____ font." },
+  { word: "psyche", sentence: "The psychologist studied the human _____ carefully." },
+  { word: "stucco", sentence: "The Mediterranean villa had walls coated with white _____." },
+  { word: "Frankenstein", sentence: "Mary Shelley wrote the famous novel about _____." },
+  { word: "schema", sentence: "He updated the database _____ to include new fields." },
+  { word: "et cetera", sentence: "Bring pencils, paper, notebooks, _____ to class." },
+  { word: "vidimus", sentence: "The lawyer stamped the document with '_____.' to certify it." },
+  { word: "delphine", sentence: "_____ illustrated a charming storybook for children." },
+  { word: "slough", sentence: "The hikers trudged through a muddy _____." },
+  { word: "archipelago", sentence: "Indonesia is a vast _____ made up of thousands of islands." },
+  { word: "serape", sentence: "He draped a colorful _____ over his shoulders." },
+  { word: "puissance", sentence: "The horse showed remarkable _____ in the jumping contest." },
+  { word: "pinioning", sentence: "The bird was carefully _____ to prevent it from flying away." },
+  { word: "chignon", sentence: "She styled her hair into a neat _____ for the party." },
+  { word: "pheromone", sentence: "Some insects use _____ to communicate with each other." },
+  { word: "galleon", sentence: "The pirates sailed a massive wooden _____ across the sea." },
+  { word: "wainscoting", sentence: "The room was decorated with elegant _____ on the walls." },
+  { word: "magnanimous", sentence: "He was _____ in victory, praising his opponent’s effort." },
+  { word: "Nehru", sentence: "Jawaharlal _____ was the first Prime Minister of India." },
+  { word: "chartreuse", sentence: "She painted the kitchen walls a bright _____ color." },
+  { word: "tag", sentence: "We played a game of _____ at the park." },
+  { word: "twigs", sentence: "The bird built its nest from tiny _____." },
+  { word: "insects", sentence: "The garden was full of buzzing _____." },
+  { word: "moment", sentence: "She captured the perfect _____ on camera." },
+  { word: "send", sentence: "Please _____ the invitation by email." },
+  { word: "taffy", sentence: "The children enjoyed pulling colorful _____ candy." },
+  { word: "teeth", sentence: "Brush your _____ twice a day for healthy gums." },
+  { word: "ajar", sentence: "The door was left slightly _____." },
+  { word: "deck", sentence: "We enjoyed a barbecue on the wooden _____." },
+  { word: "comfy", sentence: "These slippers are really _____." },
+  { word: "shortcut", sentence: "He took a _____ through the park to save time." },
+  { word: "basil", sentence: "She added fresh _____ to the pasta sauce." },
+  { word: "stuck", sentence: "The drawer was _____ and wouldn’t open." },
+  { word: "stretch", sentence: "He needed to _____ his legs after the long flight." },
+  { word: "bait", sentence: "The fisherman used worms as _____." },
+  { word: "triple", sentence: "She scored a _____ in the game." },
+  { word: "snug", sentence: "The kitten curled up in a _____ blanket." },
+  { word: "tight", sentence: "The jar lid was screwed on too _____ to open." },
+  { word: "lure", sentence: "They used a bright fly as a _____ to catch fish." },
+  { word: "satin", sentence: "The dress was made of smooth _____ fabric." },
+  { word: "fish", sentence: "We caught a big _____ in the lake." },
+  { word: "candy", sentence: "The shop sold chocolate and other _____." },
+  { word: "cluster", sentence: "A _____ of stars shone brightly in the night sky." },
+  { word: "ahoy", sentence: "The captain shouted '_____!' to greet the sailors." },
+  { word: "hold", sentence: "Please _____ the railing while going down the stairs." },
+  { word: "scrunch", sentence: "She tried to _____ the paper into a small ball." },
+  { word: "forest", sentence: "The children explored the deep _____ behind the school." },
+  { word: "signal", sentence: "The lighthouse sent a bright _____ to the ships." },
+  { word: "mind", sentence: "Keep an open _____ when learning new ideas." },
+  { word: "ruby", sentence: "The necklace had a beautiful red _____." },
+  { word: "hollow", sentence: "They found a small animal living in the _____ tree." },
+  { word: "answer", sentence: "Please write the correct _____ on the paper." },
+  { word: "stay", sentence: "He decided to _____ home during the storm." },
+  { word: "close", sentence: "Make sure to _____ the window before leaving." },
+  { word: "spinning", sentence: "The top kept _____ on the floor for minutes." },
+  { word: "shuffle", sentence: "Please _____ the deck before dealing the cards." },
+  { word: "scrub", sentence: "You need to _____ the floor to remove the stain." },
+  { word: "tackle", sentence: "He tried to _____ the problem head-on." },
+  { word: "baffling", sentence: "The puzzle was so _____ that nobody could solve it." },
+  { word: "dollop", sentence: "Add a _____ of cream on top of the pie." },
+  { word: "draw", sentence: "They went outside to _____ pictures of the scenery." },
+  { word: "wire", sentence: "The electrician connected the _____ to the power source." },
+  { word: "sizzling", sentence: "The bacon was _____ in the frying pan." },
+  { word: "minnows", sentence: "The pond was full of tiny _____ swimming near the surface." },
+  { word: "brown", sentence: "The chocolate cake had a rich _____ color." },
+  { word: "skater", sentence: "The figure _____ performed an elegant routine on ice." },
+  { word: "hoist", sentence: "They used a pulley to _____ the flag up the pole." },
+  { word: "silver", sentence: "The ring was made of pure _____." },
+  { word: "cozy", sentence: "We spent a _____ evening by the fireplace." },
+  { word: "giant", sentence: "The castle had a statue of a _____ at the entrance." },
+  { word: "search", sentence: "The police conducted a _____ for the missing child." },
+  { word: "before", sentence: "Finish your homework _____ dinner." },
+  { word: "cosy", sentence: "The room was _____ and warm in the winter." },
+  { word: "bucket", sentence: "She carried water in a large _____." },
+  { word: "remind", sentence: "Please _____ me to call my grandmother." },
+  { word: "focus", sentence: "This word may need correction before use." },
+  { word: "tint", sentence: "The painter added a light _____ to the walls." },
+  { word: "chance", sentence: "He took a _____ and applied for the new job." },
+  { word: "mango", sentence: "We enjoyed a ripe _____ for dessert." },
+  { word: "writing", sentence: "She spent the afternoon _____ letters to her friends." },
+  { word: "milk", sentence: "Pour the _____ into the glass." },
+  { word: "baskets", sentence: "The picnic included sandwiches in woven _____." },
+  { word: "coral", sentence: "The reef was full of colorful _____." },
+  { word: "kitchen", sentence: "She cooked dinner in the large _____." },
+  { word: "yawn", sentence: "He let out a big _____ after waking up." },
+  { word: "tender", sentence: "The steak was cooked perfectly and was very _____." },
+  { word: "jangle", sentence: "The keys began to _____ in his pocket." },
+  { word: "sugar", sentence: "Add a teaspoon of _____ to the tea." },
+  { word: "tank", sentence: "The soldier climbed into the armored _____." },
+  { word: "paste", sentence: "Use glue or _____ to stick the paper together." },
+  { word: "shimmer", sentence: "The lake seemed to _____ in the morning sun." },
+  { word: "awkward", sentence: "He felt _____ when speaking in front of the crowd." },
+  { word: "focus", sentence: "You need to _____ carefully on the task to get it right." },
+  { word: "want", sentence: "I _____ to go on vacation this summer." },
+  { word: "melon", sentence: "She sliced a ripe _____ for breakfast." },
+  { word: "blossoms", sentence: "The cherry trees were full of pink _____." },
+  { word: "seep", sentence: "Water began to _____ through the cracks in the wall." },
+  { word: "crowd", sentence: "The _____ cheered loudly at the concert." },
+  { word: "farmer", sentence: "The _____ tended to his crops every morning." },
+  { word: "swampy", sentence: "The trail became _____ after the rain." },
+  { word: "sweet", sentence: "She has a _____ tooth and loves desserts." },
+  { word: "pond", sentence: "The children fed ducks at the _____." },
+  { word: "parent", sentence: "Each _____ attended the school meeting." },
+  { word: "studded", sentence: "The dress was _____ with sparkling gems." },
+  { word: "wheels", sentence: "The bike’s _____ needed air." },
+  { word: "skirt", sentence: "She wore a flowing _____ to the party." },
+  { word: "tail", sentence: "The dog wagged its _____ happily." },
+  { word: "focus", sentence: "Please _____ on your homework." },
+  { word: "faint", sentence: "He felt a little _____ after standing up quickly." },
+  { word: "sharks", sentence: "The movie featured dangerous _____ in the ocean." },
+  { word: "hockey", sentence: "He played ice _____ every weekend." },
+  { word: "distress", sentence: "The signal flares indicated the sailors were in _____." },
+  { word: "fruit", sentence: "She bought fresh _____ at the market." },
+  { word: "quilt", sentence: "The grandmother made a warm _____ for the bed." },
+  { word: "slime", sentence: "The children played with green _____ in science class." },
+  { word: "lessons", sentence: "Music _____ are held twice a week." },
+  { word: "roam", sentence: "The cats were allowed to _____ freely in the yard." },
+  { word: "goats", sentence: "The farm had a herd of friendly _____." },
+  { word: "disability", sentence: "The school provided support for students with _____." },
+  { word: "avocado", sentence: "She spread ripe _____ on her toast." },
+  { word: "woozy", sentence: "He felt _____ after spinning in circles too quickly." },
+  { word: "incredible", sentence: "The view from the mountaintop was absolutely _____." },
+  { word: "valentine", sentence: "He gave his crush a handmade _____ on February 14th." },
+  { word: "limbs", sentence: "The tree’s _____ were heavy with snow." },
+  { word: "leather", sentence: "She wore a stylish _____ jacket to the party." },
+  { word: "February", sentence: "My birthday is in _____, the coldest month of the year." },
+  { word: "ahead", sentence: "The runners saw the finish line just up _____." },
+  { word: "countess", sentence: "The elegant _____ attended the royal banquet." },
+  { word: "formation", sentence: "The birds flew in a perfect V-shaped _____." },
+  { word: "sefior", sentence: "The ancient manuscript mentioned a mysterious _____." },
+  { word: "nervous", sentence: "He felt _____ before giving his first speech." },
+  { word: "especially", sentence: "I love chocolate, _____ dark chocolate." },
+  { word: "unicorn", sentence: "The fairy tale described a magical _____ in the forest." },
+  { word: "peppercorn", sentence: "Add a pinch of _____ to the sauce for flavor." },
+  { word: "faraway", sentence: "They dreamed of adventures in a _____ land." },
+  { word: "heater", sentence: "We turned on the _____ to warm the room." },
+  { word: "pirates", sentence: "The children pretended to be _____ sailing the seas." },
+  { word: "cartwheel", sentence: "She did a perfect _____ across the gym floor." },
+  { word: "raise", sentence: "He asked for a _____ in his allowance." },
+  { word: "weather", sentence: "The _____ forecast predicts rain this weekend." },
+  { word: "understand", sentence: "It’s hard to _____ why she made that decision." },
+  { word: "wooden", sentence: "The table was made of sturdy _____ planks." },
+  { word: "leaning", sentence: "The old tower was slowly _____ to one side." },
+  { word: "breakfast", sentence: "I had pancakes and syrup for _____ this morning." },
+  { word: "zooming", sentence: "The car went _____ past the finish line." },
+  { word: "attacked", sentence: "The castle was _____ by invaders at night." },
+  { word: "turnout", sentence: "The election had a surprisingly high voter _____." },
+  { word: "eaten", sentence: "All the cookies had been _____ before dinner." },
+  { word: "window", sentence: "She opened the _____ to let in fresh air." },
+  { word: "streetlights", sentence: "The _____ flickered on as night fell." },
+  { word: "acrobat", sentence: "The _____ performed daring flips on the tightrope." },
+  { word: "message", sentence: "I left a _____ on her voicemail." },
+  { word: "journey", sentence: "The explorers began their long _____ into the jungle." },
+  { word: "courtyard", sentence: "The hotel had a peaceful _____ with fountains." },
+  { word: "chocolate", sentence: "He bought a bar of dark _____ for dessert." },
+  { word: "shouting", sentence: "The fans were _____ as their team scored a goal." },
+  { word: "forepaw", sentence: "The cat lifted its _____ to scratch the post." },
+  { word: "asleep", sentence: "The baby was soundly _____ in the crib." },
+  { word: "elephant", sentence: "The _____ splashed water with its trunk." },
+  { word: "curious", sentence: "The kitten was very _____ about the new toy." },
+  { word: "hedgehog", sentence: "A small _____ curled up in the garden." },
+  { word: "recipe", sentence: "She followed the _____ carefully to bake the cake." },
+  { word: "dinosaur", sentence: "The museum had a huge _____ skeleton on display." },
+  { word: "brilliant", sentence: "She had a _____ idea for the science project." },
+  { word: "garbage", sentence: "Please take out the _____ before it smells." },
+  { word: "vacuum", sentence: "He used the _____ to clean the carpet thoroughly." },
+  { word: "surprise", sentence: "She gasped in _____ when she saw the gift." },
+  { word: "gorgeous", sentence: "The sunset painted the sky in _____ colors." },
+  { word: "mermaid", sentence: "The storybook featured a beautiful _____ in the sea." },
+  { word: "monsoon", sentence: "The heavy _____ flooded the streets of the village." },
+  { word: "bombarded", sentence: "The castle was _____ with questions from reporters." },
+  { word: "dangerous", sentence: "Climbing without ropes is extremely _____." },
+  { word: "gangly", sentence: "The teenager had a _____ frame and long limbs." },
+  { word: "comrades", sentence: "The soldiers were brave _____ on the battlefield." },
+  { word: "ultimatum", sentence: "He received an _____ to make a decision immediately." },
+  { word: "prototype", sentence: "The engineers tested a new _____ for efficiency." },
+  { word: "swaggering", sentence: "He walked into the room _____ and confident." },
+  { word: "sporadic", sentence: "There were _____ showers throughout the afternoon." },
+  { word: "whinnying", sentence: "The horse began _____ when it saw the rider approaching." },
+  { word: "cravenly", sentence: "He acted _____, avoiding any confrontation." },
+  { word: "chimneys", sentence: "The smoke rose from the tall _____ of the old house." },
+  { word: "promenade", sentence: "They took a leisurely _____ along the beach." },
+  { word: "squalor", sentence: "The refugees lived in terrible _____ before aid arrived." },
+  { word: "mulberry", sentence: "A ripe _____ hung from the tree." },
+  { word: "riveted", sentence: "She was _____ by the thrilling movie." },
+  { word: "repugnant", sentence: "The smell of rotting food was absolutely _____." },
+  { word: "memoirs", sentence: "The author wrote her _____ about childhood adventures." },
+  { word: "hypocritical", sentence: "It was _____ of him to criticize while doing the same thing." },
+  { word: "plaid", sentence: "He wore a red and black _____ shirt." },
+  { word: "invincible", sentence: "The superhero appeared completely _____." },
+  { word: "cylinders", sentence: "The engine’s _____ were carefully aligned." },
+  { word: "chlorine", sentence: "The swimming pool smelled strongly of _____." },
+  { word: "dirge", sentence: "The musicians played a slow _____ at the funeral." },
+  { word: "renowned", sentence: "She was a _____ expert in marine biology." },
+  { word: "ominous", sentence: "Dark clouds gave an _____ feeling before the storm." },
+  { word: "traumatic", sentence: "He experienced a _____ accident last year." },
+  { word: "zeal", sentence: "Her _____ for learning inspired everyone around her." },
+  { word: "parachute", sentence: "The skydiver deployed the _____ midair." },
+  { word: "muffler", sentence: "He wrapped a woolen _____ around his neck." },
+  { word: "receipts", sentence: "Keep the _____ for all purchases." },
+  { word: "whittled", sentence: "He carefully _____ the piece of wood into a figurine." },
+  { word: "laborious", sentence: "Cleaning the attic was a _____ task." },
+  { word: "syndrome", sentence: "The doctor diagnosed a rare _____ in the patient." },
+  { word: "solemnly", sentence: "He spoke _____ at the ceremony." },
+  { word: "depots", sentence: "The train stopped at several _____ along the route." },
+  { word: "appointment", sentence: "She scheduled an _____ with the dentist." },
+  { word: "premises", sentence: "Smoking is not allowed on the _____." },
+  { word: "begrudge", sentence: "He didn’t _____ her success in the project." },
+  { word: "fiberglass", sentence: "The boat was made of lightweight _____." },
+  { word: "foreseeable", sentence: "No problems are expected in the _____ future." },
+  { word: "safari", sentence: "They went on a thrilling _____ in Africa." },
+  { word: "contentious", sentence: "The debate became increasingly _____ among the scholars." },
+  { word: "salvaged", sentence: "They _____ old furniture from the abandoned house." },
+  { word: "ratify", sentence: "The council will _____ the new regulations tomorrow." },
+  { word: "lasagna", sentence: "She baked a cheesy _____ for dinner." },
+  { word: "precocious", sentence: "The _____ child amazed teachers with advanced skills." },
+  { word: "fissures", sentence: "The geologist studied the _____ in the rock formation." },
+  { word: "scalpel", sentence: "The surgeon held the _____ carefully." },
+  { word: "substantially", sentence: "The project has improved _____ over the past year." },
+  { word: "ensemble", sentence: "The orchestra performed a beautiful _____." },
+  { word: "enthusiastic", sentence: "The children were _____ about the school trip." },
+  { word: "reclusive", sentence: "The author lived a _____ life in the mountains." },
+  { word: "mercantile", sentence: "The old town had a busy _____ district." },
+  { word: "cadre", sentence: "The army trained a new _____ of soldiers." },
+  { word: "discipline", sentence: "He had excellent _____ in his work habits." },
+  { word: "compassionate", sentence: "She was a _____ nurse who cared for all patients." },
+  { word: "formidable", sentence: "The champion was a _____ opponent in the match." },
+  { word: "lye", sentence: "Handle _____ with care, as it is highly caustic." },
+  { word: "unfamiliar", sentence: "He felt _____ in the new city." },
+  { word: "bulletin", sentence: "The school released a daily _____ for announcements." },
+  { word: "propaganda", sentence: "The posters were filled with political _____." },
+  { word: "belfry", sentence: "The town heard noises from the old church _____." },
+  { word: "scurrying", sentence: "Rats were _____ across the attic floor." },
+  { word: "alfalfa", sentence: "The farmer planted _____ for the livestock." },
+  { word: "marquee", sentence: "The theater had a bright _____ announcing the play." },
+  { word: "lacrosse", sentence: "He excelled in _____ and played every weekend." },
+  { word: "dignitaries", sentence: "Important _____ attended the ceremony." },
+  { word: "officially", sentence: "The new law was _____ approved by the council." },
+  { word: "proficient", sentence: "She became _____ in French after two years." },
+  { word: "sluice", sentence: "Water flowed through the open _____." },
+  { word: "pizzeria", sentence: "We ordered a pizza from the local _____." },
+  { word: "crematorium", sentence: "The town visited the _____ for a memorial service." },
+  { word: "compunction", sentence: "He felt no _____ about telling the truth." },
+  { word: "cajolery", sentence: "Through _____ she persuaded him to help." },
+  { word: "dismissal", sentence: "The teacher announced the early _____ of students." },
+  { word: "bayonet", sentence: "The soldier fixed the _____ to his rifle." },
+  { word: "emphatically", sentence: "She stated her opinion _____ during the meeting." },
+  { word: "vigilance", sentence: "The guard remained _____ throughout the night." },
+  { word: "skittish", sentence: "The horse was _____ and easily startled." },
+  { word: "amicable", sentence: "They reached an _____ agreement after negotiations." },
+  { word: "hyperventilated", sentence: "He _____ after running up the steep hill." },
+  { word: "residuals", sentence: "The chemist measured the _____ left after the reaction." },
+  { word: "careened", sentence: "The car _____ dangerously around the bend." },
+  { word: "exuberant", sentence: "The children were _____ after winning the game." },
+  { word: "ostracism", sentence: "He faced social _____ after the scandal." },
+  { word: "boutique", sentence: "She visited the designer _____ for a fitting." },
+  { word: "nomination", sentence: "Her _____ for the award was well deserved." },
+  { word: "beautician", sentence: "The _____ styled her hair for the party." },
+  { word: "onslaught", sentence: "The castle endured an _____ from the invading army." },
+  { word: "peroxide", sentence: "He bleached his hair with _____ to look fashionable." },
+  { word: "opportunist", sentence: "He was labeled an _____ for taking advantage of the situation." },
+  { word: "equations", sentence: "The students solved complex _____ in math class." },
+  { word: "ruefully", sentence: "He smiled _____ after making a small mistake." },
+  { word: "aristocracy", sentence: "The _____ ruled the kingdom for centuries." },
+  { word: "dictatorship", sentence: "The country suffered under a harsh _____." },
+  { word: "assignment", sentence: "The teacher gave a new homework _____." },
+  { word: "misanthrope", sentence: "The old man was a _____ who avoided society." },
+  { word: "apocalypse", sentence: "The movie depicted a post-_____ world." },
+  { word: "almanac", sentence: "He checked the _____ for planting dates." },
+  { word: "talcum", sentence: "Babies were dusted with soft _____ powder." },
+  { word: "chignon", sentence: "She wore her hair in a neat _____ for the gala." },
+  { word: "hippies", sentence: "The _____ gathered in the park for the music festival." },
+  { word: "tranquilizer", sentence: "The vet used a _____ to calm the wild animal." },
+  { word: "pheromone", sentence: "Ants communicate using a _____ trail." },
+  { word: "samosas", sentence: "The chef served hot, crispy _____ at the party." },
+  { word: "equestrian", sentence: "He was an accomplished _____ rider." },
+  { word: "galleon", sentence: "The museum displayed a model of a Spanish _____." },
+  { word: "campaign", sentence: "The army launched a major _____ to reclaim the territory." },
+  { word: "plaited", sentence: "Her hair was _____ into a long braid." },
+  { word: "magnanimous", sentence: "He was _____ in victory, praising his opponent." },
+  { word: "pistachio", sentence: "She added _____ nuts to the ice cream." },
+  { word: "monsieur", sentence: "The letter was addressed to _____ Dupont." },
+  { word: "chartreuse", sentence: "The walls of the room were painted a bright _____ green." },
+  { word: "mosque", sentence: "They visited the ancient _____ during their travels." },
+  { word: "manticores", sentence: "The legend spoke of fierce _____ in distant lands." },
+  { word: "wainscoting", sentence: "The room’s walls were decorated with dark wooden _____." },
+  { word: "zombielike", sentence: "He moved through the crowd in a _____ state." },
+  { word: "prestigious", sentence: "She attended a _____ university in Europe." },
+  { word: "Nehru", sentence: "He wore a classic _____ jacket to the ceremony." },
+  { word: "warlock", sentence: "The novel described a mysterious _____ in the forest." },
+  { word: "fraidycat", sentence: "Don’t be such a _____; it’s just a harmless spider." },
+  { word: "colossus", sentence: "The new statue stood like a _____ over the town square." },
+  { word: "guttural", sentence: "The singer’s _____ voice resonated in the hall." },
+  { word: "convulsively", sentence: "She laughed _____ at the comedian’s joke." },
+  { word: "lo mein", sentence: "I ordered chicken _____ for lunch." },
+  { word: "dimensional", sentence: "The sculpture was incredibly _____ and lifelike." },
+  { word: "counter", sentence: "She placed the groceries on the kitchen _____." },
+  { word: "garishly", sentence: "The store’s display was _____ decorated to attract customers." },
+  { word: "sans serif", sentence: "The designer chose a clean _____ font for the website." },
+  { word: "graffitist", sentence: "The skilled _____ turned a blank wall into a colorful mural." },
+  { word: "psyche", sentence: "The psychologist explored the teenager’s fragile _____." },
+  { word: "Everest", sentence: "Climbers dream of reaching the summit of _____." },
+  { word: "stucco", sentence: "The walls of the villa were coated in smooth white _____." },
+  { word: "dexterity", sentence: "The magician’s sleight of hand showed amazing _____." },
+  { word: "Frankenstein", sentence: "Mary Shelley wrote the novel about _____ and his creature." },
+  { word: "cavorting", sentence: "The children were _____ in the garden after school." },
+  { word: "schema", sentence: "He revised the database _____ to include new fields." },
+  { word: "marauder", sentence: "The village was raided by a stealthy _____ at night." },
+  { word: "et cetera", sentence: "Bring pens, paper, notebooks, _____ to class." },
+  { word: "conscience", sentence: "Her _____ told her to confess the mistake." },
+  { word: "vidimus", sentence: "The official stamped the document with '_____.' to verify authenticity." },
+  { word: "battlements", sentence: "The castle’s _____ provided defense against attackers." },
+  { word: "delphine", sentence: "_____ illustrated a charming storybook for children." },
+  { word: "deferential", sentence: "He was _____ to his teachers and elders." },
+  { word: "slough", sentence: "The hikers waded carefully through the muddy _____." },
+  { word: "albatross", sentence: "The massive _____ circled above the ship." },
+  { word: "archipelago", sentence: "Indonesia is a vast _____ consisting of thousands of islands." },
+  { word: "khaki", sentence: "He wore _____ trousers for the safari." },
+  { word: "serape", sentence: "The colorful _____ was draped over his shoulders." },
+  { word: "opalescent", sentence: "The soap bubble shimmered with an _____ glow." },
+  { word: "asphalt", sentence: "The road was freshly paved with dark _____." },
+  { word: "puissance", sentence: "The horse showed remarkable _____ in the jumping contest." },
+  { word: "Yiddish", sentence: "She learned a few words in _____ from her grandparents." },
+  { word: "pinioning", sentence: "The bird was carefully _____ to prevent it from flying away." },
+  { word: "tuberculosis", sentence: "The doctor diagnosed him with _____ after several tests." },
+  { word: "patriarchs", sentence: "The ancient tribe was led by wise _____." },
+  { word: "boll weevil", sentence: "The farmers struggled with an invasion of the _____." },
+  { word: "Oswego", sentence: "We visited _____ on our trip to New York state." },
+  { word: "barricade", sentence: "The protesters built a _____ to block the street." },
+  { word: "chandelier", sentence: "The ballroom was illuminated by a crystal _____." },
+  { word: "camphor", sentence: "They used _____ to repel insects." },
+  { word: "diphtheria", sentence: "Children were vaccinated against _____ for protection." },
+  { word: "confreres", sentence: "The writers were longtime _____ in the literary club." },
+  { word: "duke", sentence: "The _____ attended the royal celebration." },
+  { word: "Tucson", sentence: "We spent the summer in _____ exploring the desert." },
+  { word: "baklava", sentence: "She served sweet _____ layered with nuts and syrup." },
+  { word: "anonymously", sentence: "The letter was sent _____ with no signature." },
+  { word: "concierge", sentence: "The hotel _____ helped us book a city tour." },
+  { word: "paparazzi", sentence: "The celebrity was constantly followed by _____." },
+  { word: "corbels", sentence: "The building featured decorative _____ under the roofline." },
+  { word: "unparalleled", sentence: "Her talent was _____ in the history of the competition." },
+  { word: "latticework", sentence: "The garden gate was covered in intricate _____." },
+  { word: "pumpernickel", sentence: "He enjoyed a sandwich on dense _____ bread." },
+  { word: "trebuchets", sentence: "The medieval army used _____ to launch large stones." },
+  { word: "barrette", sentence: "She clipped her hair back with a shiny _____." },
+  { word: "hibiscus", sentence: "The garden had vibrant red _____ flowers." },
+  { word: "pogrom", sentence: "The history book described a violent _____ in Eastern Europe." },
+  { word: "Kilimanjaro", sentence: "Mount _____ is the highest peak in Africa." },
+  { word: "chassis", sentence: "The car’s _____ was reinforced for safety." },
+  { word: "tamale", sentence: "She made spicy _____ wrapped in corn husks." },
+  { word: "bursitis", sentence: "The doctor treated his swollen joint caused by _____." },
+  { word: "fraulein", sentence: "The letter was addressed to _____ Schmidt in Germany." },
+  { word: "junket", sentence: "The journalists went on a luxurious _____ to cover the event." },
+  { word: "maracas", sentence: "The musician played lively rhythms on the _____." },
+  { word: "patisserie", sentence: "They stopped by the French _____ for fresh pastries." },
+  { word: "protege", sentence: "The young artist was a talented _____ of the master painter." },
+  { word: "quandary", sentence: "She was in a _____ about which college to attend." },
+  { word: "gyroplane", sentence: "The pilot skillfully flew a small _____ over the countryside." },
+  { word: "cycads", sentence: "The garden featured ancient-looking _____ plants." },
+  { word: "hors d'oeuvres", sentence: "Guests enjoyed delicate _____ before the main course." },
+  { word: "Erie", sentence: "We went fishing on Lake _____ last summer." },
+  { word: "burpees", sentence: "The coach made us do twenty _____ during training." },
+  { word: "sarsaparilla", sentence: "He drank a frosty glass of _____ at the diner." },
+  { word: "maquisards", sentence: "The _____ resisted occupation during the war." },
+  { word: "gingham", sentence: "She wore a cheerful red and white _____ dress." },
+  { word: "Adriatic", sentence: "They sailed along the beautiful _____ coast." },
+  { word: "Aubusson", sentence: "The museum displayed a rare _____ tapestry." },
+  { word: "silhouette", sentence: "The photographer captured a striking _____ against the sunset." },
+  { word: "piccolo", sentence: "The musician played a high note on the _____." },
+  { word: "cannelloni", sentence: "The chef baked pasta stuffed with cheese called _____." },
+  { word: "Charolais", sentence: "The farmer raised a herd of _____ cattle." },
+  { word: "auxiliary", sentence: "The team used an _____ generator during the power outage." },
+  { word: "thesaurus", sentence: "She consulted a _____ to find synonyms for her essay." },
+  { word: "au revoir", sentence: "He waved and said, '_____!' as he left the party." },
+  { word: "tulle", sentence: "The bride’s gown was layered with soft white _____." },
+  { word: "boulangerie", sentence: "We bought fresh bread from the French _____." },
+  { word: "bronchitis", sentence: "The doctor diagnosed him with _____ after a persistent cough." },
+  { word: "hesitate", sentence: "Don’t _____ to ask questions if you’re unsure." },
+  { word: "scorcher", sentence: "It was a real _____ of a day, with the sun blazing." },
+  { word: "scavenger", sentence: "The fox acted as a _____, finding scraps in the village." },
+  { word: "fragments", sentence: "The archaeologists discovered _____ of ancient pottery." },
+  { word: "deflated", sentence: "The balloon slowly _____ after the party ended." },
+  { word: "unleash", sentence: "The trainer will _____ the dog to play in the yard." },
+  { word: "ration", sentence: "Soldiers were given a daily _____ of food and water." },
+  { word: "cosmetics", sentence: "She bought new _____ at the store before the party." },
+  { word: "crawdad", sentence: "They caught a small _____ in the creek." },
+  { word: "frustration", sentence: "He clenched his fists in _____ when the plan failed." },
+  { word: "unruly", sentence: "The _____ crowd ignored the police orders." },
+  { word: "mascot", sentence: "The school’s _____ cheered for the team at every game." },
+  { word: "aroma", sentence: "The kitchen was filled with the _____ of fresh bread." },
+  { word: "moustache", sentence: "He twirled his _____ while thinking." },
+  { word: "artifacts", sentence: "The museum displayed ancient _____ from Egypt." },
+  { word: "perfume", sentence: "She wore a light _____ that smelled like roses." },
+  { word: "sinister", sentence: "A _____ shadow appeared at the end of the hallway." },
+  { word: "tuxedo", sentence: "He wore a black _____ to the gala." },
+  { word: "discoveries", sentence: "The scientist made important _____ in the lab." },
+  { word: "lurches", sentence: "The car _____ suddenly on the icy road." },
+  { word: "language", sentence: "She studied a new _____ to communicate while traveling." },
+  { word: "prognosis", sentence: "The doctor gave a hopeful _____ for the patient." },
+  { word: "Buffalo", sentence: "We visited _____ during our road trip to New York." },
+  { word: "sequins", sentence: "Her dress sparkled with golden _____." },
+  { word: "gallop", sentence: "The horse began to _____ across the meadow." },
+  { word: "fabulous", sentence: "The magician performed a _____ trick for the crowd." },
+  { word: "lanky", sentence: "The _____ teenager tripped over his own feet." },
+  { word: "fluently", sentence: "She spoke Spanish _____ after years of practice." },
+  { word: "mysterious", sentence: "A _____ figure appeared in the fog." },
+  { word: "brandished", sentence: "The knight _____ his sword to scare the opponent." },
+  { word: "sardines", sentence: "We opened a can of _____ for lunch." },
+  { word: "anguish", sentence: "He felt deep _____ after losing his best friend." },
+  { word: "conical", sentence: "The roof had a _____ shape, tapering to a point." },
+  { word: "rickety", sentence: "The old bridge looked _____ and unsafe." },
+  { word: "lilt", sentence: "Her voice had a cheerful _____ that lifted spirits." },
+  { word: "pediatric", sentence: "The _____ian specializes in children’s health." },
+  { word: "porridge", sentence: "He ate a warm bowl of oatmeal _____ for breakfast." },
+  { word: "democracy", sentence: "The country embraced _____ as its form of government." },
+  { word: "rummage", sentence: "She began to _____ through the drawers for her keys." },
+  { word: "beige", sentence: "The walls were painted a soft, neutral _____ color." },
+  { word: "ancestral", sentence: "They visited their _____ home in the countryside." },
+  { word: "grimace", sentence: "He made a _____ after tasting the sour lemon." },
+  { word: "gaunt", sentence: "The prisoner looked pale and _____ after months in jail." },
+  { word: "enormous", sentence: "The whale was an _____ creature, larger than any boat." },
+  { word: "geranium", sentence: "She planted a red _____ in every window box." },
+  { word: "nautical", sentence: "The sailor had excellent _____ knowledge." },
+  { word: "dubious", sentence: "He gave a _____ reply, making her suspicious." },
+  { word: "ebony", sentence: "The piano keys were made of polished _____ wood." },
+  { word: "foreign", sentence: "She loved tasting _____ cuisine during her travels." },
+  { word: "paltry", sentence: "The reward was a _____ sum, hardly worth the effort." },
+  { word: "verdict", sentence: "The jury reached a unanimous _____ after deliberation." },
+  { word: "garbled", sentence: "The message was _____ and hard to understand." },
+  { word: "encourages", sentence: "The coach _____ the team to keep practicing." },
+  { word: "imitation", sentence: "The artist made an _____ of the famous painting." },
+  { word: "miniature", sentence: "She collected _____ figurines of animals." },
+  { word: "receptionist", sentence: "The _____ greeted visitors at the front desk." },
+  { word: "preamble", sentence: "The _____ of the document explained its purpose." },
+  { word: "plausible", sentence: "He offered a _____ explanation for his absence." },
+  { word: "reprimanding", sentence: "The teacher was _____ the students for being late." },
+  { word: "commotion", sentence: "A loud _____ erupted in the cafeteria." },
+  { word: "oblivion", sentence: "The old town fell into _____ over the centuries." },
+  { word: "immigrants", sentence: "The city welcomed new _____ with open arms." },
+  { word: "steeple", sentence: "The church’s tall _____ could be seen from afar." },
+  { word: "spectators", sentence: "The _____ cheered as the athletes finished the race." },
+  { word: "lanyards", sentence: "They wore ID badges on _____ around their necks." },
+  { word: "suspicious", sentence: "He cast a _____ glance at the stranger." },
+  { word: "parchment", sentence: "The ancient _____ was carefully preserved in a case." },
+  { word: "ramshackle", sentence: "They lived in a _____ shack near the river." },
+  { word: "fugitive", sentence: "The police chased the dangerous _____ through the city." },
+  { word: "heron", sentence: "A tall _____ stood silently by the lake." },
+  { word: "dissolving", sentence: "The sugar was _____ quickly in the hot tea." },
+  { word: "nomad", sentence: "The _____ traveled from village to village." },
+  { word: "billowed", sentence: "Smoke _____ from the chimney into the sky." },
+  { word: "skewer", sentence: "He threaded the vegetables onto a long metal _____." },
+  { word: "Berlin", sentence: "We visited _____ during our European tour." },
+  { word: "lunacy", sentence: "The plan seemed like pure _____ to everyone." },
+  { word: "conjure", sentence: "The magician tried to _____ a rabbit from the hat." },
+  { word: "bracken", sentence: "The path was overgrown with thick _____." },
+  { word: "noggin", sentence: "He bumped his _____ on the low doorway." },
+  { word: "neon", sentence: "The sign glowed bright _____ letters." },
+  { word: "rakish", sentence: "He had a _____ style and confident demeanor." },
+  { word: "hypnosis", sentence: "The performer demonstrated _____ on a volunteer." },
+  { word: "rotunda", sentence: "The museum’s central _____ had a domed ceiling." },
+  { word: "gusto", sentence: "She sang with great energy and _____." },
+  { word: "toiletries", sentence: "They packed basic _____ for the camping trip." },
+  { word: "gleaned", sentence: "She _____ useful tips from the lecture." },
+  { word: "jeered", sentence: "The crowd _____ at the losing team." },
+  { word: "Winsome", sentence: "Her _____ smile charmed everyone at the party." },
+  { word: "prattling", sentence: "The baby kept _____ on happily in the crib." },
+  { word: "galore", sentence: "There were flowers _____ in the garden after spring." },
+  { word: "emporium", sentence: "The antique _____ sold rare and valuable items." },
+  { word: "atrium", sentence: "The hotel had a large open _____ with a fountain." },
+  { word: "eccentric", sentence: "The professor was known for his _____ habits." },
+  { word: "savant", sentence: "The young musical _____ amazed audiences with his talent." }
+];
+
+
+
+
+  let currentIndex = 0;
+  let currentItem = null;
+  let voices = [];
+
+  document.getElementById("totalWords").textContent = words.length;
+
+  function loadVoices() {
+    voices = speechSynthesis.getVoices();
+  }
+
+  speechSynthesis.onvoiceschanged = loadVoices;
+
+  function pickWord() {
+    currentItem = words[currentIndex];
+    resetUI();
+    updateWordIndex();
+  }
+
+  function resetUI() {
+    document.getElementById("sentence").textContent = currentItem.sentence;
+    document.getElementById("answer").value = "";
+    document.getElementById("result").textContent = "";
+    document.getElementById("redoBtn").disabled = true;
+  }
+
+  function updateWordIndex() {
+    document.getElementById("wordIndex").textContent = currentIndex + 1;
+  }
+
+  function speak(text) {
+    speechSynthesis.cancel();
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      if (voices.length) {
+        utterance.voice =
+          voices.find(v => v.lang.startsWith("en")) || voices[0];
+      }
+      speechSynthesis.speak(utterance);
+    }, 50);
+  }
+
+  function speakWord() {
+    speak("Please spell " + currentItem.word);
+  }
+
+  function speakSentence() {
+    const spokenSentence = currentItem.sentence.replace(
+      "_____",
+      currentItem.word
+    );
+    speak(spokenSentence);
+  }
+
+  function checkSpelling() {
+    const userAnswer = document
+      .getElementById("answer")
+      .value.trim()
+      .toLowerCase();
+
+    const result = document.getElementById("result");
+    if (!userAnswer) return;
+
+    if (userAnswer === currentItem.word) {
+      result.textContent = "✅ Correct!";
+      result.style.color = "green";
+      document.getElementById("redoBtn").disabled = true;
+    } else {
+      result.innerHTML =
+        `❌ Incorrect.<br>Correct spelling: <strong>${currentItem.word}</strong>`;
+      result.style.color = "red";
+      document.getElementById("redoBtn").disabled = false;
+    }
+  }
+
+  function redoWord() {
+    document.getElementById("answer").value = "";
+    document.getElementById("result").textContent = "";
+    document.getElementById("redoBtn").disabled = true;
+    speakWord();
+  }
+
+  function nextWord() {
+    if (currentIndex < words.length - 1) {
+      currentIndex++;
+    } else {
+      currentIndex = 0; // loop back
+    }
+    pickWord();
+    speakWord();
+  }
+
+  function jumpToIndex() {
+    const input = parseInt(document.getElementById("jumpIndex").value);
+    if (isNaN(input) || input < 1 || input > words.length) {
+      alert("Invalid index!");
+      return;
+    }
+    currentIndex = input - 1; // convert to 0-based
+    pickWord();
+    speakWord();
+  }
+
+  pickWord();
+</script>
+
+</body>
+</html>
