@@ -664,7 +664,10 @@ const words = [
     const result = document.getElementById("result");
     if (!userAnswer) return;
 
-    if (userAnswer === currentItem.word) {
+    const goldAnswer=currentItem.word.toLowerCase();
+
+
+    if (userAnswer === goldAnswer) {
       result.textContent = "✅ Correct!";
       result.style.color = "green";
       document.getElementById("redoBtn").disabled = true;
