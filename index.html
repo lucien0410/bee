@@ -695,7 +695,7 @@ function checkSpelling() {
 
   // Prepare sounds
   // const correctSound = new Audio("sounds/correct.mp3");
-  const correctSound = new Audio("sounds/correct_spin..mp3");
+  const correctSound = new Audio("sounds/correct_spin.mp3");
   const wrongSound = new Audio("sounds/wrong.mp3");
 
   if (userAnswer === goldAnswer) {
@@ -705,7 +705,7 @@ function checkSpelling() {
 
     correctSound.play(); // play cheering sound
     // runCharacter("https://media1.tenor.com/m/MRGuPLxq2QUAAAAd/horses-running.gif");
-    unCharacter("correct_spin.mp4"); // horse animation
+    runCharacter("correct_spin.mp4"); // horse animation
   } else {
     result.innerHTML =
       `❌ Incorrect.<br>Correct spelling: <strong>${currentItem.word}</strong>`;
