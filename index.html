@@ -750,18 +750,36 @@ function checkSpelling() {
   pickWord();
 
 
-function runCharacter(imgSrc) {
-  // return
+function runCharacter(src) {
   const container = document.getElementById("animationContainer");
-  const char = document.createElement("img");
-  char.src = imgSrc;
+
+  let char;
+
+  // 🎥 Video (mp4 / webm)
+  if (src.endsWith(".mp4") || src.endsWith(".webm")) {
+    char = document.createElement("video");
+    char.src = src;
+    char.autoplay = true;
+    char.loop = true;
+    char.muted = true;        // REQUIRED for autoplay
+    char.playsInline = true;
+  }
+  // 🖼️ Image / GIF
+  else {
+    char = document.createElement("img");
+    char.src = src;
+  }
+
+  char.style.position = "fixed";
+  char.style.width = "150px";
+  char.style.pointerEvents = "none";
+
   container.appendChild(char);
 
-  // start roughly in the center of the viewport
-  let x = window.innerWidth / 2 - 75 + Math.random() * 100 - 50; // center ±50px
+  // start roughly in the center
+  let x = window.innerWidth / 2 - 75 + Math.random() * 100 - 50;
   let y = window.innerHeight / 2 - 75 + Math.random() * 100 - 50;
 
-  // small random movements
   let dx = Math.random() > 0.5 ? 3 : -3;
   let dy = Math.random() > 0.5 ? 2 : -2;
 
@@ -769,14 +787,13 @@ function runCharacter(imgSrc) {
     x += dx;
     y += dy;
 
-    // keep within a central area (±200px from center)
     const minX = window.innerWidth / 2 - 200;
     const maxX = window.innerWidth / 2 + 200;
     const minY = window.innerHeight / 2 - 200;
     const maxY = window.innerHeight / 2 + 200;
 
-    if (x < minX || x > maxX) dx = -dx;
-    if (y < minY || y > maxY) dy = -dy;
+    if (x < minX || x > maxX) dx *= -1;
+    if (y < minY || y > maxY) dy *= -1;
 
     char.style.left = x + "px";
     char.style.top = y + "px";
@@ -784,9 +801,10 @@ function runCharacter(imgSrc) {
 
   setTimeout(() => {
     clearInterval(move);
-    container.removeChild(char);
+    char.remove();
   }, 5000);
 }
+
 
 
 document.getElementById("answer").addEventListener("keydown", function (e) {
