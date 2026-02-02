@@ -698,24 +698,35 @@ function checkSpelling() {
   const correctSound = new Audio("sounds/correct_spin.mp3");
   const wrongSound = new Audio("sounds/wrong.mp3");
 
-  if (userAnswer === goldAnswer) {
-    result.textContent = "✅ Correct!";
-    result.style.color = "green";
-    document.getElementById("redoBtn").disabled = true;
+if (userAnswer === goldAnswer) {
+  result.textContent = "✅ Correct!";
+  result.style.color = "green";
+  document.getElementById("redoBtn").disabled = true;
 
-    correctSound.play(); // play cheering sound
-    // runCharacter("https://media1.tenor.com/m/MRGuPLxq2QUAAAAd/horses-running.gif");
-    runCharacter("correct_spin.mp4"); // horse animation
-  } else {
-    result.innerHTML =
-      `❌ Incorrect.<br>Correct spelling: <strong>${currentItem.word}</strong>`;
-    result.style.color = "red";
-    document.getElementById("redoBtn").disabled = false;
+  correctSound.play();
 
-    wrongSound.play(); // play funny buzzer sound
-    runCharacter("nonoEva.gif");
-    //runCharacter("https://media1.tenor.com/m/d6XR75p0xsEAAAAd/a-funny-chicken-thing.gif");
-  }
+  // 🎲 Random correct animation
+  const correctAnimations = ["correct_spin.mp4", "correct2_web.mp4"];
+  const randomCorrect =
+    correctAnimations[Math.floor(Math.random() * correctAnimations.length)];
+
+  runCharacter(randomCorrect);
+
+} else {
+  result.innerHTML =
+    `❌ Incorrect.<br>Correct spelling: <strong>${currentItem.word}</strong>`;
+  result.style.color = "red";
+  document.getElementById("redoBtn").disabled = false;
+
+  wrongSound.play();
+
+  // 🎲 Random wrong animation
+  const wrongAnimations = ["nonoEva.gif", "wrong2_web.mp4"];
+  const randomWrong =
+    wrongAnimations[Math.floor(Math.random() * wrongAnimations.length)];
+
+  runCharacter(randomWrong);
+ }
 }
 
 
@@ -771,7 +782,7 @@ function runCharacter(src) {
   }
 
   char.style.position = "fixed";
-  char.style.width = "150px";
+  char.style.width = "250px";
   char.style.pointerEvents = "none";
 
   container.appendChild(char);
